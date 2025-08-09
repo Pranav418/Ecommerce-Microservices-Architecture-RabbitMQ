@@ -1,6 +1,6 @@
 services:
   # 1. The PostgreSQL Database
-  - type: postgres
+  - type: database # <-- CORRECTED from 'postgres'
     name: micro-merch-db
     plan: free
 
@@ -19,7 +19,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: postgres # <-- CORRECTED
+          type: database # <-- CORRECTED
           name: micro-merch-db
           property: connectionString
       - key: FLASK_DEBUG
@@ -33,7 +33,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: postgres # <-- CORRECTED
+          type: database # <-- CORRECTED
           name: micro-merch-db
           property: connectionString
       - key: RABBITMQ_URL
@@ -52,7 +52,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: postgres # <-- CORRECTED
+          type: database # <-- CORRECTED
           name: micro-merch-db
           property: connectionString
       - key: RABBITMQ_URL
