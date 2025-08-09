@@ -1,16 +1,20 @@
-services:
-  # 1. The PostgreSQL Database
-  - type: database # <-- CORRECTED from 'postgres'
-    name: micro-merch-db
-    plan: free
+# This file defines all the services and databases for the application.
 
-  # 2. The RabbitMQ Instance
+# The 'databases' key is a top-level section for managed databases.
+databases:
+  - name: micro-merch-db
+    plan: free # Use the free tier for the database
+    databaseName: ecommerce_db # Optional: specify the initial DB name
+    user: user # Optional: specify the initial user
+
+services:
+  # 1. The RabbitMQ Message Broker
   - type: pservice
     name: rabbitmq
     dockerimage: rabbitmq:3-management-alpine
     plan: free
 
-  # 3. The Backend Services
+  # 2. The Backend Web Services (Flask Apps)
   - type: web
     name: users-service
     plan: free
@@ -18,8 +22,7 @@ services:
     dockerfilePath: ./users-service/Dockerfile
     envVars:
       - key: DATABASE_URL
-        fromService:
-          type: database # <-- CORRECTED
+        fromDatabase:
           name: micro-merch-db
           property: connectionString
       - key: FLASK_DEBUG
@@ -32,8 +35,7 @@ services:
     dockerfilePath: ./products-service/Dockerfile
     envVars:
       - key: DATABASE_URL
-        fromService:
-          type: database # <-- CORRECTED
+        fromDatabase:
           name: micro-merch-db
           property: connectionString
       - key: RABBITMQ_URL
@@ -51,8 +53,7 @@ services:
     dockerfilePath: ./orders-service/Dockerfile
     envVars:
       - key: DATABASE_URL
-        fromService:
-          type: database # <-- CORRECTED
+        fromDatabase:
           name: micro-merch-db
           property: connectionString
       - key: RABBITMQ_URL
@@ -73,7 +74,7 @@ services:
       - key: FLASK_DEBUG
         value: 0
 
-  # 4. The API Gateway
+  # 3. The API Gateway Service
   - type: web
     name: api-gateway
     plan: free
@@ -91,7 +92,7 @@ services:
       - key: FLASK_DEBUG
         value: 0
 
-  # 5. The React Frontend
+  # 4. The React Frontend
   - type: static
     name: frontend-service
     plan: free
