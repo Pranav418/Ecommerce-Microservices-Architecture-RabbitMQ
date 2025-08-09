@@ -9,7 +9,7 @@ databases:
 
 services:
   # 1. The RabbitMQ Message Broker
-  - type: pservice
+  - type: privateservice # <-- CORRECTED from 'pservice'
     name: rabbitmq
     dockerimage: rabbitmq:3-management-alpine
     plan: free
@@ -40,7 +40,7 @@ services:
           property: connectionString
       - key: RABBITMQ_URL
         fromService:
-          type: pservice
+          type: privateservice # <-- CORRECTED from 'pservice'
           name: rabbitmq
           property: host
       - key: FLASK_DEBUG
@@ -58,7 +58,7 @@ services:
           property: connectionString
       - key: RABBITMQ_URL
         fromService:
-          type: pservice
+          type: privateservice # <-- CORRECTED from 'pservice'
           name: rabbitmq
           property: host
       - key: USERS_SERVICE_URL
