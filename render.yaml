@@ -1,16 +1,16 @@
 services:
   # 1. The PostgreSQL Database
-  - type: psql
+  - type: postgres
     name: micro-merch-db
     plan: free
 
-  # 2. The RabbitMQ Instance (Render calls this a "Private Service")
+  # 2. The RabbitMQ Instance
   - type: pservice
     name: rabbitmq
     dockerimage: rabbitmq:3-management-alpine
     plan: free
 
-  # 3. The Backend Services (Users, Products, Orders)
+  # 3. The Backend Services
   - type: web
     name: users-service
     plan: free
@@ -19,11 +19,11 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: psql
+          type: postgres # <-- CORRECTED
           name: micro-merch-db
           property: connectionString
       - key: FLASK_DEBUG
-        value: 0 # Turn off debug mode for production
+        value: 0
 
   - type: web
     name: products-service
@@ -33,7 +33,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: psql
+          type: postgres # <-- CORRECTED
           name: micro-merch-db
           property: connectionString
       - key: RABBITMQ_URL
@@ -52,7 +52,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromService:
-          type: psql
+          type: postgres # <-- CORRECTED
           name: micro-merch-db
           property: connectionString
       - key: RABBITMQ_URL
@@ -91,13 +91,12 @@ services:
       - key: FLASK_DEBUG
         value: 0
 
-  # 5. The React Frontend (Render calls this a "Static Site")
+  # 5. The React Frontend
   - type: static
     name: frontend-service
     plan: free
     env: docker
     dockerfilePath: ./frontend-service/Dockerfile
-    # Add a rewrite rule for single-page apps like React
     routes:
       - type: rewrite
         source: /*
