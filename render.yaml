@@ -1,0 +1,104 @@
+services:
+  # 1. The PostgreSQL Database
+  - type: psql
+    name: micro-merch-db
+    plan: free
+
+  # 2. The RabbitMQ Instance (Render calls this a "Private Service")
+  - type: pservice
+    name: rabbitmq
+    dockerimage: rabbitmq:3-management-alpine
+    plan: free
+
+  # 3. The Backend Services (Users, Products, Orders)
+  - type: web
+    name: users-service
+    plan: free
+    env: docker
+    dockerfilePath: ./users-service/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: psql
+          name: micro-merch-db
+          property: connectionString
+      - key: FLASK_DEBUG
+        value: 0 # Turn off debug mode for production
+
+  - type: web
+    name: products-service
+    plan: free
+    env: docker
+    dockerfilePath: ./products-service/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: psql
+          name: micro-merch-db
+          property: connectionString
+      - key: RABBITMQ_URL
+        fromService:
+          type: pservice
+          name: rabbitmq
+          property: host
+      - key: FLASK_DEBUG
+        value: 0
+
+  - type: web
+    name: orders-service
+    plan: free
+    env: docker
+    dockerfilePath: ./orders-service/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: psql
+          name: micro-merch-db
+          property: connectionString
+      - key: RABBITMQ_URL
+        fromService:
+          type: pservice
+          name: rabbitmq
+          property: host
+      - key: USERS_SERVICE_URL
+        fromService:
+          type: web
+          name: users-service
+          property: url
+      - key: PRODUCTS_SERVICE_URL
+        fromService:
+          type: web
+          name: products-service
+          property: url
+      - key: FLASK_DEBUG
+        value: 0
+
+  # 4. The API Gateway
+  - type: web
+    name: api-gateway
+    plan: free
+    env: docker
+    dockerfilePath: ./api-gateway/Dockerfile
+    envVars:
+      - key: USERS_SERVICE_URL
+        fromService: { type: web, name: users-service, property: url }
+      - key: PRODUCTS_SERVICE_URL
+        fromService: { type: web, name: products-service, property: url }
+      - key: ORDERS_SERVICE_URL
+        fromService: { type: web, name: orders-service, property: url }
+      - key: FRONTEND_URL
+        fromService: { type: static, name: frontend-service, property: url }
+      - key: FLASK_DEBUG
+        value: 0
+
+  # 5. The React Frontend (Render calls this a "Static Site")
+  - type: static
+    name: frontend-service
+    plan: free
+    env: docker
+    dockerfilePath: ./frontend-service/Dockerfile
+    # Add a rewrite rule for single-page apps like React
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

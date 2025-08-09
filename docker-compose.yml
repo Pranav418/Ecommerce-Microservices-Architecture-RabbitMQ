@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    # Reads the credentials from your .env file
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "15672:15672"
+
+  frontend-service:
+    build: ./frontend-service
+    ports:
+      - "8081:80"
+    depends_on:
+      - api-gateway
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./api-gateway:/app
+    environment:
+      - USERS_SERVICE_URL=http://users-service:5001
+      - PRODUCTS_SERVICE_URL=http://products-service:5002
+      - ORDERS_SERVICE_URL=http://orders-service:5003
+      - FRONTEND_URL=${FRONTEND_URL} # For CORS
+    depends_on:
+      - users-service
+      - products-service
+      - orders-service
+
+  users-service:
+    build: ./users-service
+    volumes:
+      - ./users-service:/app
+    environment:
+      # Uses the variables from .env to build the connection string
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db: { condition: service_healthy }
+
+  products-service:
+    build: ./products-service
+    volumes:
+      - ./products-service:/app
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - RABBITMQ_URL=rabbitmq
+    depends_on:
+      db: { condition: service_healthy }
+      rabbitmq: { condition: service_started }
+
+  orders-service:
+    build: ./orders-service
+    volumes:
+      - ./orders-service:/app
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - RABBITMQ_URL=rabbitmq
+      - USERS_SERVICE_URL=http://users-service:5001
+      - PRODUCTS_SERVICE_URL=http://products-service:5002
+    depends_on:
+      db: { condition: service_healthy }
+      rabbitmq: { condition: service_started }
+
+volumes:
+  postgres_data:

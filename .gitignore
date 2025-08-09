@@ -1,0 +1,16 @@
+# Environment variables
+.env
+
+# Python specific
+__pycache__/
+*.pyc
+
+# Node.js specific (for the frontend)
+frontend-service/node_modules/*
+frontend-service/dist/*
+frontend-service/.DS_Store
+
+# IDE and OS files
+.vscode/
+.idea/
+*.DS_Store
